@@ -5,6 +5,13 @@ const year = document.querySelector("[data-year]");
 const robot = document.querySelector(".hero-robot");
 const robotSpeech = document.querySelector(".robot-speech");
 const educationTimeline = document.querySelector("[data-education-timeline]");
+const educationSection = document.querySelector(".education-section");
+const certificateCards = document.querySelectorAll("[data-certificate-pdf]");
+const certificateModal = document.querySelector("[data-certificate-modal]");
+const certificateFrame = document.querySelector("[data-certificate-frame]");
+const certificateClose = document.querySelector("[data-certificate-close]");
+const certificateModalTitle = document.querySelector("#certificate-modal-title");
+const contactForm = document.querySelector("[data-contact-form]");
 
 const syncHeader = () => {
   header.classList.toggle("is-scrolled", window.scrollY > 12);
@@ -29,6 +36,111 @@ navLinks.forEach((link) => {
 year.textContent = new Date().getFullYear();
 syncHeader();
 window.addEventListener("scroll", syncHeader, { passive: true });
+
+if (educationSection) {
+  let certificateScrollTimer;
+  const certificateStack = educationSection.querySelector(".education-papers");
+  const backCertificate = educationSection.querySelector(".education-paper-back");
+
+  const pulseCertificateWiggle = () => {
+    const rect = educationSection.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const isNearEducation = rect.top < viewportHeight && rect.bottom > 0;
+
+    if (!isNearEducation) {
+      educationSection.classList.remove("is-certificate-scrolling");
+      return;
+    }
+
+    educationSection.classList.add("is-certificate-scrolling");
+    window.clearTimeout(certificateScrollTimer);
+    certificateScrollTimer = window.setTimeout(() => {
+      educationSection.classList.remove("is-certificate-scrolling");
+    }, 220);
+  };
+
+  window.addEventListener("scroll", pulseCertificateWiggle, { passive: true });
+
+  if (certificateStack && backCertificate) {
+    backCertificate.addEventListener("mouseenter", () => certificateStack.classList.add("is-revealing-back"));
+    backCertificate.addEventListener("mouseleave", () => certificateStack.classList.remove("is-revealing-back"));
+    backCertificate.addEventListener("focus", () => certificateStack.classList.add("is-revealing-back"));
+    backCertificate.addEventListener("blur", () => certificateStack.classList.remove("is-revealing-back"));
+  }
+}
+
+if (certificateCards.length && certificateModal && certificateFrame && certificateClose) {
+  let activeCertificateCard = null;
+
+  const openCertificate = (card) => {
+    activeCertificateCard = card;
+    const pdfPath = card.dataset.certificatePdf;
+    const title = card.dataset.certificateTitle || "Certificate";
+
+    certificateFrame.title = `${title} certificate preview`;
+    if (certificateModalTitle) {
+      certificateModalTitle.textContent = title;
+    }
+    certificateFrame.removeAttribute("src");
+    certificateModal.classList.add("is-open");
+    certificateModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("certificate-modal-open");
+    certificateClose.focus();
+    window.setTimeout(() => {
+      certificateFrame.src = `${pdfPath}#toolbar=0&navpanes=0&scrollbar=0&zoom=70`;
+    }, 120);
+  };
+
+  const closeCertificate = () => {
+    certificateModal.classList.remove("is-open");
+    certificateModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("certificate-modal-open");
+    certificateFrame.removeAttribute("src");
+    activeCertificateCard?.focus();
+    activeCertificateCard = null;
+  };
+
+  certificateCards.forEach((card) => {
+    card.addEventListener("click", () => openCertificate(card));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openCertificate(card);
+      }
+    });
+  });
+
+  certificateClose.addEventListener("click", closeCertificate);
+  certificateModal.addEventListener("click", (event) => {
+    if (event.target === certificateModal) {
+      closeCertificate();
+    }
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && certificateModal.classList.contains("is-open")) {
+      closeCertificate();
+    }
+  });
+}
+
+if (contactForm) {
+  contactForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(contactForm);
+    const name = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const subject = String(formData.get("subject") || "Portfolio contact").trim();
+    const message = String(formData.get("message") || "").trim();
+    const body = [
+      `Name: ${name}`,
+      `Email: ${email}`,
+      "",
+      message
+    ].join("\n");
+
+    window.location.href = `mailto:meddh.contact@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+}
 
 if (educationTimeline) {
   const educationEvents = educationTimeline.querySelectorAll(".education-event");
